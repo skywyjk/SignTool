@@ -364,3 +364,4 @@ FodyWeavers.xsd
 
 # Installer output
 install/output/
+install/sign/
