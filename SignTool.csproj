@@ -7,6 +7,7 @@
     <AssemblyName>SignTool</AssemblyName>
     <RootNamespace>SignTool</RootNamespace>
     <Nullable>disable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="logo.ico" />

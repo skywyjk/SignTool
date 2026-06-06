@@ -261,16 +261,16 @@ namespace SignTool
             // 
             // TxtJurisdictionLocality
             // 
-            TxtJurisdictionLocality.Location = new System.Drawing.Point(707, 75);
+            TxtJurisdictionLocality.Location = new System.Drawing.Point(662, 75);
             TxtJurisdictionLocality.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             TxtJurisdictionLocality.Name = "TxtJurisdictionLocality";
-            TxtJurisdictionLocality.Size = new System.Drawing.Size(68, 30);
+            TxtJurisdictionLocality.Size = new System.Drawing.Size(145, 30);
             TxtJurisdictionLocality.TabIndex = 9;
             // 
             // LblJurisdictionLocality
             // 
             LblJurisdictionLocality.AutoSize = true;
-            LblJurisdictionLocality.Location = new System.Drawing.Point(581, 78);
+            LblJurisdictionLocality.Location = new System.Drawing.Point(578, 78);
             LblJurisdictionLocality.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             LblJurisdictionLocality.Name = "LblJurisdictionLocality";
             LblJurisdictionLocality.Size = new System.Drawing.Size(82, 24);
@@ -279,16 +279,16 @@ namespace SignTool
             // 
             // TxtJurisdictionState
             // 
-            TxtJurisdictionState.Location = new System.Drawing.Point(409, 75);
+            TxtJurisdictionState.Location = new System.Drawing.Point(378, 75);
             TxtJurisdictionState.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             TxtJurisdictionState.Name = "TxtJurisdictionState";
-            TxtJurisdictionState.Size = new System.Drawing.Size(155, 30);
+            TxtJurisdictionState.Size = new System.Drawing.Size(186, 30);
             TxtJurisdictionState.TabIndex = 7;
             // 
             // LblJurisdictionState
             // 
             LblJurisdictionState.AutoSize = true;
-            LblJurisdictionState.Location = new System.Drawing.Point(275, 78);
+            LblJurisdictionState.Location = new System.Drawing.Point(278, 78);
             LblJurisdictionState.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             LblJurisdictionState.Name = "LblJurisdictionState";
             LblJurisdictionState.Size = new System.Drawing.Size(82, 24);
@@ -301,7 +301,7 @@ namespace SignTool
             TxtJurisdictionCountry.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             TxtJurisdictionCountry.MaxLength = 2;
             TxtJurisdictionCountry.Name = "TxtJurisdictionCountry";
-            TxtJurisdictionCountry.Size = new System.Drawing.Size(92, 30);
+            TxtJurisdictionCountry.Size = new System.Drawing.Size(108, 30);
             TxtJurisdictionCountry.TabIndex = 5;
             // 
             // LblJurisdictionCountry
@@ -658,7 +658,7 @@ namespace SignTool
             // BtnExportCer
             // 
             BtnExportCer.Enabled = false;
-            BtnExportCer.Location = new System.Drawing.Point(441, 155);
+            BtnExportCer.Location = new System.Drawing.Point(542, 154);
             BtnExportCer.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnExportCer.Name = "BtnExportCer";
             BtnExportCer.Size = new System.Drawing.Size(157, 49);
@@ -670,7 +670,7 @@ namespace SignTool
             // BtnExportPfx
             // 
             BtnExportPfx.Enabled = false;
-            BtnExportPfx.Location = new System.Drawing.Point(221, 155);
+            BtnExportPfx.Location = new System.Drawing.Point(316, 154);
             BtnExportPfx.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnExportPfx.Name = "BtnExportPfx";
             BtnExportPfx.Size = new System.Drawing.Size(189, 49);
@@ -681,7 +681,7 @@ namespace SignTool
             // 
             // BtnLoadCert
             // 
-            BtnLoadCert.Location = new System.Drawing.Point(316, 282);
+            BtnLoadCert.Location = new System.Drawing.Point(441, 284);
             BtnLoadCert.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnLoadCert.Name = "BtnLoadCert";
             BtnLoadCert.Size = new System.Drawing.Size(236, 49);
@@ -693,7 +693,7 @@ namespace SignTool
             // BtnInstallCert
             // 
             BtnInstallCert.Enabled = false;
-            BtnInstallCert.Location = new System.Drawing.Point(190, 353);
+            BtnInstallCert.Location = new System.Drawing.Point(441, 353);
             BtnInstallCert.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnInstallCert.Name = "BtnInstallCert";
             BtnInstallCert.Size = new System.Drawing.Size(236, 49);
@@ -705,7 +705,7 @@ namespace SignTool
             // BtnUninstallCert
             // 
             BtnUninstallCert.Enabled = false;
-            BtnUninstallCert.Location = new System.Drawing.Point(441, 353);
+            BtnUninstallCert.Location = new System.Drawing.Point(441, 416);
             BtnUninstallCert.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnUninstallCert.Name = "BtnUninstallCert";
             BtnUninstallCert.Size = new System.Drawing.Size(236, 49);
@@ -717,7 +717,7 @@ namespace SignTool
             // BtnViewCertInfo
             // 
             BtnViewCertInfo.Enabled = false;
-            BtnViewCertInfo.Location = new System.Drawing.Point(316, 424);
+            BtnViewCertInfo.Location = new System.Drawing.Point(441, 486);
             BtnViewCertInfo.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnViewCertInfo.Name = "BtnViewCertInfo";
             BtnViewCertInfo.Size = new System.Drawing.Size(236, 49);
@@ -728,7 +728,7 @@ namespace SignTool
             // 
             // BtnElevate
             // 
-            BtnElevate.Location = new System.Drawing.Point(723, 353);
+            BtnElevate.Location = new System.Drawing.Point(798, 353);
             BtnElevate.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnElevate.Name = "BtnElevate";
             BtnElevate.Size = new System.Drawing.Size(236, 49);
@@ -741,7 +741,7 @@ namespace SignTool
             // 
             LblUserStatus.AutoSize = true;
             LblUserStatus.ForeColor = System.Drawing.Color.Blue;
-            LblUserStatus.Location = new System.Drawing.Point(919, 19);
+            LblUserStatus.Location = new System.Drawing.Point(833, 309);
             LblUserStatus.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             LblUserStatus.Name = "LblUserStatus";
             LblUserStatus.Size = new System.Drawing.Size(163, 24);
@@ -799,7 +799,7 @@ namespace SignTool
             // BtnExportPvkSpc
             // 
             BtnExportPvkSpc.Enabled = false;
-            BtnExportPvkSpc.Location = new System.Drawing.Point(606, 155);
+            BtnExportPvkSpc.Location = new System.Drawing.Point(753, 154);
             BtnExportPvkSpc.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnExportPvkSpc.Name = "BtnExportPvkSpc";
             BtnExportPvkSpc.Size = new System.Drawing.Size(189, 49);

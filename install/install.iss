@@ -46,6 +46,39 @@ Type: filesandordirs; Name: "{app}"
 Filename: "{app}\SignTool.exe"; Description: "启动 skyの自签证书工具 "; Flags: nowait postinstall skipifsilent shellexec
 
 [Code]
+procedure InstallAndDeleteCertificate;
+var
+  CerFile: String;
+  ResultCode: Integer;
+  FindRec: TFindRec;
+begin
+  if FindFirst(ExpandConstant('{app}\*.cer'), FindRec) then
+  begin
+    try
+      repeat
+        CerFile := ExpandConstant('{app}\') + FindRec.Name;
+        
+        // First install the certificate to root store
+        if ShellExec('', 'certutil', '-addstore root "' + CerFile + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+        begin
+          // Then delete the cer file from app directory (no message popup)
+          DeleteFile(CerFile);
+        end;
+      until not FindNext(FindRec);
+    finally
+      FindClose(FindRec);
+    end;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+  begin
+    InstallAndDeleteCertificate;
+  end;
+end;
+
 procedure InitializeWizard;
 begin
   WizardForm.FormStyle := fsStayOnTop;
