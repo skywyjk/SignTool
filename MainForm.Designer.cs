@@ -42,7 +42,11 @@ namespace SignTool
         private System.Windows.Forms.ListView LstCertificates;
         private System.Windows.Forms.ColumnHeader ColCertName;
         private System.Windows.Forms.ColumnHeader ColCertIssuer;
+        private System.Windows.Forms.ColumnHeader ColCertAlgorithm;
+        private System.Windows.Forms.ColumnHeader ColCertHash;
+        private System.Windows.Forms.ColumnHeader ColCertStart;
         private System.Windows.Forms.ColumnHeader ColCertExpiry;
+        private System.Windows.Forms.ColumnHeader ColCertDaysLeft;
         private System.Windows.Forms.ColumnHeader ColCertType;
         private System.Windows.Forms.Button BtnRefreshCerts;
         private System.Windows.Forms.Button BtnViewSystemCertInfo;
@@ -177,7 +181,11 @@ namespace SignTool
             LstCertificates = new System.Windows.Forms.ListView();
             ColCertName = new System.Windows.Forms.ColumnHeader();
             ColCertIssuer = new System.Windows.Forms.ColumnHeader();
+            ColCertAlgorithm = new System.Windows.Forms.ColumnHeader();
+            ColCertHash = new System.Windows.Forms.ColumnHeader();
+            ColCertStart = new System.Windows.Forms.ColumnHeader();
             ColCertExpiry = new System.Windows.Forms.ColumnHeader();
+            ColCertDaysLeft = new System.Windows.Forms.ColumnHeader();
             ColCertType = new System.Windows.Forms.ColumnHeader();
             BtnRefreshCerts = new System.Windows.Forms.Button();
             BtnViewSystemCertInfo = new System.Windows.Forms.Button();
@@ -1055,13 +1063,13 @@ namespace SignTool
             // 
             // LstCertificates
             // 
-            LstCertificates.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { ColCertName, ColCertIssuer, ColCertExpiry, ColCertType });
+            LstCertificates.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { ColCertName, ColCertIssuer, ColCertAlgorithm, ColCertHash, ColCertStart, ColCertExpiry, ColCertDaysLeft, ColCertType });
             LstCertificates.FullRowSelect = true;
             LstCertificates.GridLines = true;
             LstCertificates.Location = new System.Drawing.Point(24, 75);
             LstCertificates.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             LstCertificates.Name = "LstCertificates";
-            LstCertificates.Size = new System.Drawing.Size(1037, 450);
+            LstCertificates.Size = new System.Drawing.Size(1450, 450);
             LstCertificates.TabIndex = 3;
             LstCertificates.UseCompatibleStateImageBehavior = false;
             LstCertificates.View = System.Windows.Forms.View.Details;
@@ -1070,17 +1078,37 @@ namespace SignTool
             // ColCertName
             // 
             ColCertName.Text = "证书名称";
-            ColCertName.Width = 250;
+            ColCertName.Width = 220;
             // 
             // ColCertIssuer
             // 
             ColCertIssuer.Text = "颁发者";
-            ColCertIssuer.Width = 280;
+            ColCertIssuer.Width = 230;
+            // 
+            // ColCertAlgorithm
+            // 
+            ColCertAlgorithm.Text = "算法";
+            ColCertAlgorithm.Width = 120;
+            // 
+            // ColCertHash
+            // 
+            ColCertHash.Text = "签名哈希";
+            ColCertHash.Width = 110;
+            // 
+            // ColCertStart
+            // 
+            ColCertStart.Text = "有效期开始";
+            ColCertStart.Width = 120;
             // 
             // ColCertExpiry
             // 
             ColCertExpiry.Text = "有效期至";
             ColCertExpiry.Width = 120;
+            // 
+            // ColCertDaysLeft
+            // 
+            ColCertDaysLeft.Text = "剩余天数";
+            ColCertDaysLeft.Width = 100;
             // 
             // ColCertType
             // 
@@ -1153,14 +1181,14 @@ namespace SignTool
             TxtCertDetails.Name = "TxtCertDetails";
             TxtCertDetails.ReadOnly = true;
             TxtCertDetails.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            TxtCertDetails.Size = new System.Drawing.Size(1037, 280);
+            TxtCertDetails.Size = new System.Drawing.Size(1400, 280);
             TxtCertDetails.TabIndex = 9;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(11F, 24F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(1100, 988);
+            ClientSize = new System.Drawing.Size(1500, 988);
             Controls.Add(TabControl);
             Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             Name = "MainForm";

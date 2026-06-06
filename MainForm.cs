@@ -847,12 +847,41 @@ namespace SignTool
                     string certName = GetCertificateDisplayName(cert);
                     ListViewItem item = new(certName);
                     item.SubItems.Add(cert.IssuerName.Name);
+                    
+                    // 获取算法信息
+                    string algorithm = GetCertificateAlgorithm(cert);
+                    item.SubItems.Add(algorithm);
+                    
+                    // 获取签名哈希算法
+                    string hashAlgorithm = GetSignatureHashAlgorithm(cert);
+                    item.SubItems.Add(hashAlgorithm);
+                    
+                    item.SubItems.Add(cert.NotBefore.ToShortDateString());
                     item.SubItems.Add(cert.NotAfter.ToShortDateString());
                     
+                    // 计算剩余天数
+                    TimeSpan timeLeft = cert.NotAfter - DateTime.Now;
+                    string daysLeftStr = timeLeft.TotalDays > 0 
+                        ? $"{(int)timeLeft.TotalDays} 天" 
+                        : "已过期";
+                    item.SubItems.Add(daysLeftStr);
+                    
+                    // 获取证书类型
                     string certType = GetCertificateType(cert);
                     item.SubItems.Add(certType);
                     
                     item.Tag = cert;
+                    
+                    // 如果已过期，标记为红色
+                    if (timeLeft.TotalDays <= 0)
+                    {
+                        item.ForeColor = System.Drawing.Color.Red;
+                    }
+                    else if (timeLeft.TotalDays < 30)
+                    {
+                        item.ForeColor = System.Drawing.Color.Orange;
+                    }
+                    
                     LstCertificates.Items.Add(item);
                 }
 
@@ -862,6 +891,66 @@ namespace SignTool
             {
                 MessageBox.Show($"加载证书失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private static string GetCertificateAlgorithm(X509Certificate2 cert)
+        {
+            string algoName = cert.PublicKey.Oid.FriendlyName ?? cert.PublicKey.Oid.Value;
+            
+            // 尝试获取密钥长度
+            int? keySize = null;
+            try
+            {
+                var rsa = cert.GetRSAPublicKey();
+                if (rsa != null)
+                {
+                    keySize = rsa.KeySize;
+                }
+                else
+                {
+                    var ecdsa = cert.GetECDsaPublicKey();
+                    if (ecdsa != null)
+                    {
+                        keySize = ecdsa.KeySize;
+                    }
+                }
+            }
+            catch { }
+            
+            if (keySize.HasValue)
+            {
+                return $"{algoName} ({keySize.Value}位)";
+            }
+            return algoName;
+        }
+
+        private static string GetSignatureHashAlgorithm(X509Certificate2 cert)
+        {
+            string signatureAlgo = cert.SignatureAlgorithm.FriendlyName ?? cert.SignatureAlgorithm.Value;
+            
+            // 从签名算法中提取哈希算法
+            if (signatureAlgo.Contains("sha256", StringComparison.CurrentCultureIgnoreCase))
+                return "SHA256";
+            if (signatureAlgo.Contains("sha384", StringComparison.CurrentCultureIgnoreCase))
+                return "SHA384";
+            if (signatureAlgo.Contains("sha512", StringComparison.CurrentCultureIgnoreCase))
+                return "SHA512";
+            if (signatureAlgo.Contains("sha1", StringComparison.CurrentCultureIgnoreCase))
+                return "SHA1";
+            if (signatureAlgo.Contains("md5", StringComparison.CurrentCultureIgnoreCase))
+                return "MD5";
+            
+            // 尝试从 OID 判断
+            string oidValue = cert.SignatureAlgorithm.Value;
+            return oidValue switch
+            {
+                "1.2.840.113549.1.1.11" => "SHA256",
+                "1.2.840.113549.1.1.12" => "SHA384",
+                "1.2.840.113549.1.1.13" => "SHA512",
+                "1.2.840.113549.1.1.5" => "SHA1",
+                "1.2.840.113549.1.1.4" => "MD5",
+                _ => signatureAlgo
+            };
         }
 
         private static string GetCertificateDisplayName(X509Certificate2 cert)
