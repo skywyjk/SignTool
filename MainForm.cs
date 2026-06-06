@@ -21,6 +21,7 @@ namespace SignTool
             LoadIconFromResource();
             LoadConfiguration();
             UpdateUserStatus();
+            LoadCertificates();
             this.FormClosing += MainForm_FormClosing;
         }
 
@@ -324,6 +325,7 @@ namespace SignTool
                 BtnExportCer.Enabled = true;
                 BtnExportPvkSpc.Enabled = true;
                 BtnSignFile.Enabled = true;
+                BtnBatchSign.Enabled = true;
                 BtnInstallCert.Enabled = true;
                 BtnUninstallCert.Enabled = true;
                 BtnViewCertInfo.Enabled = true;
@@ -442,6 +444,7 @@ namespace SignTool
                     BtnExportCer.Enabled = true;
                     BtnExportPvkSpc.Enabled = true;
                     BtnSignFile.Enabled = true;
+                    BtnBatchSign.Enabled = true;
                     BtnInstallCert.Enabled = true;
                     BtnUninstallCert.Enabled = true;
                     BtnViewCertInfo.Enabled = true;
@@ -702,5 +705,497 @@ namespace SignTool
                 MessageBox.Show($"提权失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private async void BtnBatchSign_Click(object sender, EventArgs e)
+        {
+            if (_currentCertificate == null)
+            {
+                MessageBox.Show("请先生成或加载证书", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!CertificateManager.IsSignToolAvailable())
+            {
+                MessageBox.Show("未找到signtool.exe，请安装Windows SDK或确保signtool.exe在系统路径中", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            using OpenFileDialog openDialog = new();
+            openDialog.Multiselect = true; // 允许多选
+            if (ChkDriverSigning.Checked)
+            {
+                openDialog.Filter = "驱动文件 (*.sys;*.cat)|*.sys;*.cat|所有文件 (*.*)|*.*";
+                openDialog.Title = "选择要批量签名的驱动文件（可多选）";
+            }
+            else
+            {
+                openDialog.Filter = "可执行文件 (*.exe;*.dll;*.msi)|*.exe;*.dll;*.msi|所有文件 (*.*)|*.*";
+                openDialog.Title = "选择要批量签名的文件（可多选）";
+            }
+
+            if (openDialog.ShowDialog() == DialogResult.OK)
+            {
+                string[] selectedFiles = openDialog.FileNames;
+                if (selectedFiles.Length == 0)
+                {
+                    return;
+                }
+
+                string hashAlgorithm = CmbHashAlgorithm.SelectedItem?.ToString() ?? "SHA256";
+                string timestampServer = GetTimestampServerUrl();
+                bool useDualSign = ChkDualSign.Checked;
+
+                // 禁用按钮并显示进度
+                BtnBatchSign.Enabled = false;
+                BtnBatchSign.Text = $"签名中... 0/{selectedFiles.Length}";
+
+                int successCount = 0;
+                int failCount = 0;
+                StringBuilder errorMessages = new();
+
+                // 逐个签名文件
+                for (int i = 0; i < selectedFiles.Length; i++)
+                {
+                    string filePath = selectedFiles[i];
+                    string fileName = System.IO.Path.GetFileName(filePath);
+
+                    // 更新进度
+                    BtnBatchSign.Text = $"签名中... {i + 1}/{selectedFiles.Length}";
+                    BtnBatchSign.Refresh();
+
+                    bool success;
+                    if (useDualSign)
+                    {
+                        if (ChkDriverSigning.Checked)
+                        {
+                            success = CertificateManager.DualSignDriver(filePath, _currentCertificate, timestampServer);
+                        }
+                        else
+                        {
+                            success = CertificateManager.DualSignFile(filePath, _currentCertificate, false, "", timestampServer);
+                        }
+                    }
+                    else
+                    {
+                        if (ChkDriverSigning.Checked)
+                        {
+                            success = CertificateManager.SignDriver(filePath, _currentCertificate, hashAlgorithm, timestampServer);
+                        }
+                        else
+                        {
+                            success = CertificateManager.SignFile(filePath, _currentCertificate, hashAlgorithm, false, "", timestampServer);
+                        }
+                    }
+
+                    if (success)
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        failCount++;
+                        errorMessages.AppendLine($"失败: {fileName}");
+                        if (!string.IsNullOrEmpty(CertificateManager.LastError))
+                        {
+                            errorMessages.AppendLine($"  原因: {CertificateManager.LastError}");
+                        }
+                    }
+
+                    // 让 UI 有机会更新
+                    await Task.Delay(10);
+                }
+
+                // 恢复按钮
+                BtnBatchSign.Enabled = true;
+                BtnBatchSign.Text = "批量签名";
+
+                // 显示结果
+                string resultMessage = $"批量签名完成！\n\n成功: {successCount} 个文件\n失败: {failCount} 个文件";
+                if (failCount > 0)
+                {
+                    resultMessage += $"\n\n失败文件:\n{errorMessages}";
+                }
+
+                MessageBox.Show(resultMessage, "批量签名结果", MessageBoxButtons.OK, 
+                    failCount > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+            }
+        }
+
+        private void CmbCertificateStore_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            LoadCertificates();
+        }
+
+        private void BtnRefreshCerts_Click(object sender, EventArgs e)
+        {
+            LoadCertificates();
+        }
+
+        private void LoadCertificates()
+        {
+            LstCertificates.Items.Clear();
+            TxtCertDetails.Text = string.Empty;
+            SetCertificateButtonsEnabled(false);
+
+            try
+            {
+                X509Store store = GetSelectedStore();
+                store.Open(OpenFlags.ReadOnly);
+
+                foreach (X509Certificate2 cert in store.Certificates)
+                {
+                    string certName = GetCertificateDisplayName(cert);
+                    ListViewItem item = new(certName);
+                    item.SubItems.Add(cert.IssuerName.Name);
+                    item.SubItems.Add(cert.NotAfter.ToShortDateString());
+                    
+                    string certType = GetCertificateType(cert);
+                    item.SubItems.Add(certType);
+                    
+                    item.Tag = cert;
+                    LstCertificates.Items.Add(item);
+                }
+
+                store.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"加载证书失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static string GetCertificateDisplayName(X509Certificate2 cert)
+        {
+            // 尝试多个来源获取证书名称
+            if (!string.IsNullOrEmpty(cert.FriendlyName))
+                return cert.FriendlyName;
+
+            string simpleName = cert.GetNameInfo(X509NameType.SimpleName, true);
+            if (!string.IsNullOrEmpty(simpleName) && !simpleName.StartsWith("CN="))
+                return simpleName;
+
+            // 从 Subject 中提取 CN
+            string subject = cert.Subject;
+            var cnMatch = MyRegex().Match(subject);
+            if (cnMatch.Success)
+                return cnMatch.Groups[1].Value;
+
+            // 最后使用完整的 Subject
+            return subject;
+        }
+
+        private X509Store GetSelectedStore()
+        {
+            string storeName = CmbCertificateStore.SelectedItem?.ToString() ?? "Personal - 个人";
+            StoreName name;
+            StoreLocation location = StoreLocation.CurrentUser;
+
+            switch (storeName)
+            {
+                case "Personal - 个人":
+                    name = StoreName.My;
+                    break;
+                case "TrustedPeople - 受信任的人":
+                    name = StoreName.TrustedPeople;
+                    break;
+                case "TrustedPublisher - 受信任的发布者":
+                    name = StoreName.TrustedPublisher;
+                    break;
+                case "CA - 证书颁发机构":
+                    name = StoreName.CertificateAuthority;
+                    break;
+                case "Root - 受信任的根证书颁发机构":
+                    name = StoreName.Root;
+                    location = StoreLocation.LocalMachine;
+                    break;
+                default:
+                    name = StoreName.My;
+                    break;
+            }
+
+            return new X509Store(name, location);
+        }
+
+        private static string GetCertificateType(X509Certificate2 cert)
+        {
+            List<string> types = [];
+
+            // 查找扩展密钥用法扩展
+            foreach (X509Extension extension in cert.Extensions)
+            {
+                if (extension.Oid?.Value == "2.5.29.37") // Extended Key Usage
+                {
+                    if (extension is X509EnhancedKeyUsageExtension eku)
+                    {
+                        foreach (var oid in eku.EnhancedKeyUsages)
+                        {
+                            switch (oid.Value)
+                            {
+                                case "1.3.6.1.5.5.7.3.3":
+                                    if (!types.Contains("代码签名"))
+                                        types.Add("代码签名");
+                                    break;
+                                case "1.3.6.1.5.5.7.3.1":
+                                    if (!types.Contains("服务器认证"))
+                                        types.Add("服务器认证");
+                                    break;
+                                case "1.3.6.1.5.5.7.3.2":
+                                    if (!types.Contains("客户端认证"))
+                                        types.Add("客户端认证");
+                                    break;
+                                case "1.3.6.1.5.5.7.3.4":
+                                    if (!types.Contains("电子邮件保护"))
+                                        types.Add("电子邮件保护");
+                                    break;
+                                case "1.3.6.1.5.5.7.3.8":
+                                    if (!types.Contains("时间戳"))
+                                        types.Add("时间戳");
+                                    break;
+                                case "1.3.6.1.5.5.7.3.5":
+                                    if (!types.Contains("IPSec终端系统"))
+                                        types.Add("IPSec终端系统");
+                                    break;
+                                case "1.3.6.1.5.5.7.3.6":
+                                    if (!types.Contains("IPSec隧道"))
+                                        types.Add("IPSec隧道");
+                                    break;
+                                case "1.3.6.1.5.5.7.3.7":
+                                    if (!types.Contains("IPSec用户"))
+                                        types.Add("IPSec用户");
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 备用方案：直接解析扩展数据
+                        try
+                        {
+                            string extensionData = extension.Format(true);
+                            if (extensionData.Contains("1.3.6.1.5.5.7.3.3"))
+                            {
+                                if (!types.Contains("代码签名"))
+                                    types.Add("代码签名");
+                            }
+                            if (extensionData.Contains("1.3.6.1.5.5.7.3.1"))
+                            {
+                                if (!types.Contains("服务器认证"))
+                                    types.Add("服务器认证");
+                            }
+                            if (extensionData.Contains("1.3.6.1.5.5.7.3.2"))
+                            {
+                                if (!types.Contains("客户端认证"))
+                                    types.Add("客户端认证");
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                else if (extension.Oid?.Value == "2.5.29.15") // Key Usage
+                {
+                    // 可以添加密钥用法识别
+                }
+            }
+
+            if (types.Count == 0)
+            {
+                // 根据证书属性判断类型
+                if (cert.Subject.Contains("CN=Microsoft"))
+                {
+                    types.Add("微软证书");
+                }
+                else if (cert.Subject.Contains("root", StringComparison.CurrentCultureIgnoreCase) || cert.Issuer.Contains("root", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    types.Add("根证书");
+                }
+                else
+                {
+                    types.Add("其他");
+                }
+            }
+
+            return string.Join(", ", types);
+        }
+
+        private void LstCertificates_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (LstCertificates.SelectedItems.Count > 0)
+            {
+                if (LstCertificates.SelectedItems[0].Tag is X509Certificate2 cert)
+                {
+                    DisplayCertificateDetails(cert);
+                    SetCertificateButtonsEnabled(true);
+                }
+            }
+            else
+            {
+                TxtCertDetails.Text = string.Empty;
+                SetCertificateButtonsEnabled(false);
+            }
+        }
+
+        private void DisplayCertificateDetails(X509Certificate2 cert)
+        {
+            StringBuilder details = new();
+            details.AppendLine($"证书名称: {cert.FriendlyName ?? cert.GetNameInfo(X509NameType.SimpleName, true)}");
+            details.AppendLine($"主题: {cert.Subject}");
+            details.AppendLine($"颁发者: {cert.Issuer}");
+            details.AppendLine($"序列号: {cert.SerialNumber}");
+            details.AppendLine($"有效期从: {cert.NotBefore}");
+            details.AppendLine($"有效期至: {cert.NotAfter}");
+            details.AppendLine($"版本: {cert.Version}");
+            details.AppendLine($"签名算法: {cert.SignatureAlgorithm.FriendlyName}");
+            details.AppendLine($"公钥算法: {cert.GetKeyAlgorithm()}");
+            details.AppendLine($"密钥长度: {cert.GetRSAPublicKey()?.KeySize ?? cert.GetECDsaPublicKey()?.KeySize ?? cert.GetDSAPublicKey()?.KeySize ?? 0} 位");
+            
+            if (cert.HasPrivateKey)
+            {
+                details.AppendLine("是否有私钥: 是");
+            }
+            else
+            {
+                details.AppendLine("是否有私钥: 否");
+            }
+
+            details.AppendLine("\n扩展信息:");
+            foreach (var extension in cert.Extensions)
+            {
+                try
+                {
+                    details.AppendLine($"  {extension.Oid?.FriendlyName ?? extension.Oid?.Value}: {extension.Format(true)}");
+                }
+                catch
+                {
+                    details.AppendLine($"  {extension.Oid?.FriendlyName ?? extension.Oid?.Value}: [无法解析]");
+                }
+            }
+
+            TxtCertDetails.Text = details.ToString();
+        }
+
+        private void SetCertificateButtonsEnabled(bool enabled)
+        {
+            BtnViewSystemCertInfo.Enabled = enabled;
+            BtnExportSystemCert.Enabled = enabled;
+            BtnDeleteSystemCert.Enabled = enabled;
+            
+            if (enabled && LstCertificates.SelectedItems.Count > 0)
+            {
+                BtnUseSystemCert.Enabled = LstCertificates.SelectedItems[0].Tag is X509Certificate2 cert && cert.HasPrivateKey;
+            }
+            else
+            {
+                BtnUseSystemCert.Enabled = false;
+            }
+        }
+
+        private void BtnViewSystemCertInfo_Click(object sender, EventArgs e)
+        {
+            if (LstCertificates.SelectedItems.Count > 0)
+            {
+                if (LstCertificates.SelectedItems[0].Tag is X509Certificate2 cert)
+                {
+                    string info = CertificateManager.GetCertificateInfo(cert);
+                    MessageBox.Show(info, "证书详细信息", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        private void BtnExportSystemCert_Click(object sender, EventArgs e)
+        {
+            if (LstCertificates.SelectedItems.Count > 0)
+            {
+                if (LstCertificates.SelectedItems[0].Tag is X509Certificate2 cert)
+                {
+                    using SaveFileDialog saveDialog = new();
+                    saveDialog.Filter = "DER 编码证书 (*.cer)|*.cer|PFX 证书 (*.pfx)|*.pfx|所有文件 (*.*)|*.*";
+                    saveDialog.Title = "导出证书";
+                    saveDialog.FileName = $"{cert.GetNameInfo(X509NameType.SimpleName, true)}.cer";
+
+                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        try
+                        {
+                            string filePath = saveDialog.FileName;
+                            if (filePath.EndsWith(".pfx", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (cert.HasPrivateKey)
+                                {
+                                    byte[] pfxData = cert.Export(X509ContentType.Pfx, "");
+                                    System.IO.File.WriteAllBytes(filePath, pfxData);
+                                    MessageBox.Show("证书导出成功！", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                }
+                                else
+                                {
+                                    MessageBox.Show("该证书没有私钥，无法导出为PFX格式", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                }
+                            }
+                            else
+                            {
+                                byte[] cerData = cert.Export(X509ContentType.Cert);
+                                System.IO.File.WriteAllBytes(filePath, cerData);
+                                MessageBox.Show("证书导出成功！", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"导出证书失败: {ex.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void BtnDeleteSystemCert_Click(object sender, EventArgs e)
+        {
+            if (LstCertificates.SelectedItems.Count > 0)
+            {
+                if (LstCertificates.SelectedItems[0].Tag is X509Certificate2 cert)
+                {
+                    DialogResult result = MessageBox.Show(
+                        $"确定要删除证书 \"{cert.FriendlyName ?? cert.GetNameInfo(X509NameType.SimpleName, true)}\" 吗？\n\n此操作将从系统证书存储中永久删除该证书。",
+                        "确认删除",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        try
+                        {
+                            X509Store store = GetSelectedStore();
+                            store.Open(OpenFlags.ReadWrite);
+                            store.Remove(cert);
+                            store.Close();
+
+                            MessageBox.Show("证书删除成功！", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadCertificates();
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"删除证书失败: {ex.Message}\n\n可能需要管理员权限", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void BtnUseSystemCert_Click(object sender, EventArgs e)
+        {
+            if (LstCertificates.SelectedItems.Count > 0)
+            {
+                if (LstCertificates.SelectedItems[0].Tag is X509Certificate2 cert && cert.HasPrivateKey)
+                {
+                    _currentCertificate = cert;
+                    TxtCertDetails.Text = string.Empty;
+                    LoadCertificates();
+
+                    TabControl.SelectedTab = TabPage3;
+                    MessageBox.Show("已选择该证书进行签名操作！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        [System.Text.RegularExpressions.GeneratedRegex(@"CN=([^,]+)")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex();
     }
 }

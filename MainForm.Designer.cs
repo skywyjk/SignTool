@@ -20,6 +20,7 @@ namespace SignTool
         private System.Windows.Forms.Button BtnUninstallCert;
         private System.Windows.Forms.Button BtnViewCertInfo;
         private System.Windows.Forms.Button BtnSignFile;
+        private System.Windows.Forms.Button BtnBatchSign;
         private System.Windows.Forms.Button BtnVerify;
         private System.Windows.Forms.Button BtnRemoveSign;
         private System.Windows.Forms.Button BtnElevate;
@@ -33,6 +34,23 @@ namespace SignTool
         private System.Windows.Forms.TabPage TabPage1;
         private System.Windows.Forms.TabPage TabPage2;
         private System.Windows.Forms.TabPage TabPage3;
+        private System.Windows.Forms.TabPage TabPage4;
+
+        // 系统证书管理控件
+        private System.Windows.Forms.Label LblCertificateStore;
+        private System.Windows.Forms.ComboBox CmbCertificateStore;
+        private System.Windows.Forms.ListView LstCertificates;
+        private System.Windows.Forms.ColumnHeader ColCertName;
+        private System.Windows.Forms.ColumnHeader ColCertIssuer;
+        private System.Windows.Forms.ColumnHeader ColCertExpiry;
+        private System.Windows.Forms.ColumnHeader ColCertType;
+        private System.Windows.Forms.Button BtnRefreshCerts;
+        private System.Windows.Forms.Button BtnViewSystemCertInfo;
+        private System.Windows.Forms.Button BtnExportSystemCert;
+        private System.Windows.Forms.Button BtnDeleteSystemCert;
+        private System.Windows.Forms.Button BtnUseSystemCert;
+        private System.Windows.Forms.Label LblCertDetails;
+        private System.Windows.Forms.TextBox TxtCertDetails;
 
         // 代码签名控件
         private System.Windows.Forms.CheckBox ChkDriverSigning;
@@ -151,8 +169,23 @@ namespace SignTool
             TabPage3 = new System.Windows.Forms.TabPage();
             BtnVerify = new System.Windows.Forms.Button();
             BtnSignFile = new System.Windows.Forms.Button();
+            BtnBatchSign = new System.Windows.Forms.Button();
             BtnRemoveSign = new System.Windows.Forms.Button();
-            ChkDriverSigning = new System.Windows.Forms.CheckBox();
+            TabPage4 = new System.Windows.Forms.TabPage();
+            LblCertificateStore = new System.Windows.Forms.Label();
+            CmbCertificateStore = new System.Windows.Forms.ComboBox();
+            LstCertificates = new System.Windows.Forms.ListView();
+            ColCertName = new System.Windows.Forms.ColumnHeader();
+            ColCertIssuer = new System.Windows.Forms.ColumnHeader();
+            ColCertExpiry = new System.Windows.Forms.ColumnHeader();
+            ColCertType = new System.Windows.Forms.ColumnHeader();
+            BtnRefreshCerts = new System.Windows.Forms.Button();
+            BtnViewSystemCertInfo = new System.Windows.Forms.Button();
+            BtnExportSystemCert = new System.Windows.Forms.Button();
+            BtnDeleteSystemCert = new System.Windows.Forms.Button();
+            BtnUseSystemCert = new System.Windows.Forms.Button();
+            LblCertDetails = new System.Windows.Forms.Label();
+            TxtCertDetails = new System.Windows.Forms.TextBox();
             ChkDualSign = new System.Windows.Forms.CheckBox();
             CmbHashAlgorithm = new System.Windows.Forms.ComboBox();
             CmbTimestampServer = new System.Windows.Forms.ComboBox();
@@ -160,6 +193,7 @@ namespace SignTool
             LblHashAlgorithm = new System.Windows.Forms.Label();
             LblTimestampServer = new System.Windows.Forms.Label();
             LblSignType = new System.Windows.Forms.Label();
+            ChkDriverSigning = new System.Windows.Forms.CheckBox();
             TabControl.SuspendLayout();
             TabPage1.SuspendLayout();
             GrpEVInfo.SuspendLayout();
@@ -169,6 +203,7 @@ namespace SignTool
             ((System.ComponentModel.ISupportInitialize)NudKeySize).BeginInit();
             TabPage2.SuspendLayout();
             TabPage3.SuspendLayout();
+            TabPage4.SuspendLayout();
             SuspendLayout();
             // 
             // TabControl
@@ -176,6 +211,7 @@ namespace SignTool
             TabControl.Controls.Add(TabPage1);
             TabControl.Controls.Add(TabPage2);
             TabControl.Controls.Add(TabPage3);
+            TabControl.Controls.Add(TabPage4);
             TabControl.Dock = System.Windows.Forms.DockStyle.Fill;
             TabControl.Location = new System.Drawing.Point(0, 0);
             TabControl.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
@@ -811,6 +847,7 @@ namespace SignTool
             // TabPage3
             // 
             TabPage3.Controls.Add(BtnVerify);
+            TabPage3.Controls.Add(BtnBatchSign);
             TabPage3.Controls.Add(BtnSignFile);
             TabPage3.Controls.Add(BtnRemoveSign);
             TabPage3.Controls.Add(ChkDriverSigning);
@@ -832,7 +869,7 @@ namespace SignTool
             // 
             // BtnVerify
             // 
-            BtnVerify.Location = new System.Drawing.Point(440, 282);
+            BtnVerify.Location = new System.Drawing.Point(440, 357);
             BtnVerify.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnVerify.Name = "BtnVerify";
             BtnVerify.Size = new System.Drawing.Size(236, 49);
@@ -841,10 +878,22 @@ namespace SignTool
             BtnVerify.UseVisualStyleBackColor = true;
             BtnVerify.Click += BtnVerify_Click;
             // 
+            // BtnBatchSign
+            // 
+            BtnBatchSign.Enabled = false;
+            BtnBatchSign.Location = new System.Drawing.Point(440, 290);
+            BtnBatchSign.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            BtnBatchSign.Name = "BtnBatchSign";
+            BtnBatchSign.Size = new System.Drawing.Size(236, 49);
+            BtnBatchSign.TabIndex = 10;
+            BtnBatchSign.Text = "批量签名";
+            BtnBatchSign.UseVisualStyleBackColor = true;
+            BtnBatchSign.Click += BtnBatchSign_Click;
+            // 
             // BtnSignFile
             // 
             BtnSignFile.Enabled = false;
-            BtnSignFile.Location = new System.Drawing.Point(440, 212);
+            BtnSignFile.Location = new System.Drawing.Point(440, 222);
             BtnSignFile.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnSignFile.Name = "BtnSignFile";
             BtnSignFile.Size = new System.Drawing.Size(236, 49);
@@ -855,7 +904,7 @@ namespace SignTool
             // 
             // BtnRemoveSign
             // 
-            BtnRemoveSign.Location = new System.Drawing.Point(440, 353);
+            BtnRemoveSign.Location = new System.Drawing.Point(440, 428);
             BtnRemoveSign.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             BtnRemoveSign.Name = "BtnRemoveSign";
             BtnRemoveSign.Size = new System.Drawing.Size(236, 49);
@@ -949,6 +998,164 @@ namespace SignTool
             LblSignType.TabIndex = 2;
             LblSignType.Text = "签名类型";
             // 
+            // TabPage4
+            // 
+            TabPage4.Controls.Add(LstCertificates);
+            TabPage4.Controls.Add(CmbCertificateStore);
+            TabPage4.Controls.Add(LblCertificateStore);
+            TabPage4.Controls.Add(BtnRefreshCerts);
+            TabPage4.Controls.Add(BtnViewSystemCertInfo);
+            TabPage4.Controls.Add(BtnExportSystemCert);
+            TabPage4.Controls.Add(BtnDeleteSystemCert);
+            TabPage4.Controls.Add(BtnUseSystemCert);
+            TabPage4.Controls.Add(LblCertDetails);
+            TabPage4.Controls.Add(TxtCertDetails);
+            TabPage4.Location = new System.Drawing.Point(4, 33);
+            TabPage4.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            TabPage4.Name = "TabPage4";
+            TabPage4.Padding = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            TabPage4.Size = new System.Drawing.Size(1092, 951);
+            TabPage4.TabIndex = 3;
+            TabPage4.Text = "系统证书";
+            TabPage4.UseVisualStyleBackColor = true;
+            // 
+            // LblCertificateStore
+            // 
+            LblCertificateStore.AutoSize = true;
+            LblCertificateStore.Location = new System.Drawing.Point(24, 25);
+            LblCertificateStore.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            LblCertificateStore.Name = "LblCertificateStore";
+            LblCertificateStore.Size = new System.Drawing.Size(82, 24);
+            LblCertificateStore.TabIndex = 0;
+            LblCertificateStore.Text = "证书存储";
+            // 
+            // CmbCertificateStore
+            // 
+            CmbCertificateStore.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            CmbCertificateStore.FormattingEnabled = true;
+            CmbCertificateStore.Items.AddRange(new object[] { "Personal - 个人", "TrustedPeople - 受信任的人", "TrustedPublisher - 受信任的发布者", "CA - 证书颁发机构", "Root - 受信任的根证书颁发机构" });
+            CmbCertificateStore.Location = new System.Drawing.Point(157, 22);
+            CmbCertificateStore.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            CmbCertificateStore.Name = "CmbCertificateStore";
+            CmbCertificateStore.Size = new System.Drawing.Size(343, 32);
+            CmbCertificateStore.TabIndex = 1;
+            CmbCertificateStore.Text = "Personal - 个人";
+            CmbCertificateStore.SelectedIndexChanged += CmbCertificateStore_SelectedIndexChanged;
+            // 
+            // BtnRefreshCerts
+            // 
+            BtnRefreshCerts.Location = new System.Drawing.Point(528, 20);
+            BtnRefreshCerts.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            BtnRefreshCerts.Name = "BtnRefreshCerts";
+            BtnRefreshCerts.Size = new System.Drawing.Size(117, 38);
+            BtnRefreshCerts.TabIndex = 2;
+            BtnRefreshCerts.Text = "刷新";
+            BtnRefreshCerts.UseVisualStyleBackColor = true;
+            BtnRefreshCerts.Click += BtnRefreshCerts_Click;
+            // 
+            // LstCertificates
+            // 
+            LstCertificates.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { ColCertName, ColCertIssuer, ColCertExpiry, ColCertType });
+            LstCertificates.FullRowSelect = true;
+            LstCertificates.GridLines = true;
+            LstCertificates.Location = new System.Drawing.Point(24, 75);
+            LstCertificates.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            LstCertificates.Name = "LstCertificates";
+            LstCertificates.Size = new System.Drawing.Size(1037, 450);
+            LstCertificates.TabIndex = 3;
+            LstCertificates.UseCompatibleStateImageBehavior = false;
+            LstCertificates.View = System.Windows.Forms.View.Details;
+            LstCertificates.SelectedIndexChanged += LstCertificates_SelectedIndexChanged;
+            // 
+            // ColCertName
+            // 
+            ColCertName.Text = "证书名称";
+            ColCertName.Width = 250;
+            // 
+            // ColCertIssuer
+            // 
+            ColCertIssuer.Text = "颁发者";
+            ColCertIssuer.Width = 280;
+            // 
+            // ColCertExpiry
+            // 
+            ColCertExpiry.Text = "有效期至";
+            ColCertExpiry.Width = 120;
+            // 
+            // ColCertType
+            // 
+            ColCertType.Text = "类型";
+            ColCertType.Width = 120;
+            // 
+            // BtnViewSystemCertInfo
+            // 
+            BtnViewSystemCertInfo.Enabled = false;
+            BtnViewSystemCertInfo.Location = new System.Drawing.Point(24, 542);
+            BtnViewSystemCertInfo.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            BtnViewSystemCertInfo.Name = "BtnViewSystemCertInfo";
+            BtnViewSystemCertInfo.Size = new System.Drawing.Size(157, 49);
+            BtnViewSystemCertInfo.TabIndex = 4;
+            BtnViewSystemCertInfo.Text = "查看详情";
+            BtnViewSystemCertInfo.UseVisualStyleBackColor = true;
+            BtnViewSystemCertInfo.Click += BtnViewSystemCertInfo_Click;
+            // 
+            // BtnExportSystemCert
+            // 
+            BtnExportSystemCert.Enabled = false;
+            BtnExportSystemCert.Location = new System.Drawing.Point(191, 542);
+            BtnExportSystemCert.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            BtnExportSystemCert.Name = "BtnExportSystemCert";
+            BtnExportSystemCert.Size = new System.Drawing.Size(157, 49);
+            BtnExportSystemCert.TabIndex = 5;
+            BtnExportSystemCert.Text = "导出证书";
+            BtnExportSystemCert.UseVisualStyleBackColor = true;
+            BtnExportSystemCert.Click += BtnExportSystemCert_Click;
+            // 
+            // BtnDeleteSystemCert
+            // 
+            BtnDeleteSystemCert.Enabled = false;
+            BtnDeleteSystemCert.Location = new System.Drawing.Point(358, 542);
+            BtnDeleteSystemCert.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            BtnDeleteSystemCert.Name = "BtnDeleteSystemCert";
+            BtnDeleteSystemCert.Size = new System.Drawing.Size(157, 49);
+            BtnDeleteSystemCert.TabIndex = 6;
+            BtnDeleteSystemCert.Text = "删除证书";
+            BtnDeleteSystemCert.UseVisualStyleBackColor = true;
+            BtnDeleteSystemCert.Click += BtnDeleteSystemCert_Click;
+            // 
+            // BtnUseSystemCert
+            // 
+            BtnUseSystemCert.Enabled = false;
+            BtnUseSystemCert.Location = new System.Drawing.Point(525, 542);
+            BtnUseSystemCert.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            BtnUseSystemCert.Name = "BtnUseSystemCert";
+            BtnUseSystemCert.Size = new System.Drawing.Size(157, 49);
+            BtnUseSystemCert.TabIndex = 7;
+            BtnUseSystemCert.Text = "使用此证书";
+            BtnUseSystemCert.UseVisualStyleBackColor = true;
+            BtnUseSystemCert.Click += BtnUseSystemCert_Click;
+            // 
+            // LblCertDetails
+            // 
+            LblCertDetails.AutoSize = true;
+            LblCertDetails.Location = new System.Drawing.Point(24, 618);
+            LblCertDetails.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            LblCertDetails.Name = "LblCertDetails";
+            LblCertDetails.Size = new System.Drawing.Size(82, 24);
+            LblCertDetails.TabIndex = 8;
+            LblCertDetails.Text = "证书详情";
+            // 
+            // TxtCertDetails
+            // 
+            TxtCertDetails.Location = new System.Drawing.Point(24, 650);
+            TxtCertDetails.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            TxtCertDetails.Multiline = true;
+            TxtCertDetails.Name = "TxtCertDetails";
+            TxtCertDetails.ReadOnly = true;
+            TxtCertDetails.ScrollBars = System.Windows.Forms.ScrollBars.Both;
+            TxtCertDetails.Size = new System.Drawing.Size(1037, 280);
+            TxtCertDetails.TabIndex = 9;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(11F, 24F);
@@ -973,6 +1180,8 @@ namespace SignTool
             TabPage2.PerformLayout();
             TabPage3.ResumeLayout(false);
             TabPage3.PerformLayout();
+            TabPage4.ResumeLayout(false);
+            TabPage4.PerformLayout();
             ResumeLayout(false);
         }
     }
