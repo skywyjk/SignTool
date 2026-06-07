@@ -7,12 +7,51 @@ Write-Host "Building sky SignTool Installer" -ForegroundColor Cyan
 Write-Host "==============================================" -ForegroundColor Cyan
 Write-Host ""
 
+# Load Windows Forms for file dialogs
+Add-Type -AssemblyName System.Windows.Forms
+
+# Step 0: Select certificate files
+Write-Host 'Step 0: Select certificate files...' -ForegroundColor Yellow
+
+$pfxFile = $null
+$cerFile = $null
+
+# Select PFX file
+$pfxDialog = New-Object System.Windows.Forms.OpenFileDialog
+$pfxDialog.Title = "Select PFX certificate file"
+$pfxDialog.Filter = "PFX files (*.pfx)|*.pfx|All files (*.*)|*.*"
+$pfxDialog.CheckFileExists = $true
+
+if ($pfxDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    $pfxFile = Get-Item $pfxDialog.FileName
+    Write-Host "Selected PFX file: $($pfxFile.FullName)" -ForegroundColor Green
+} else {
+    Write-Host "WARNING: No PFX file selected, signing will be skipped" -ForegroundColor Yellow
+}
+
+# Select CER file (optional)
+if ($pfxFile) {
+    $cerDialog = New-Object System.Windows.Forms.OpenFileDialog
+    $cerDialog.Title = "Select CER certificate file (optional)"
+    $cerDialog.Filter = "CER files (*.cer)|*.cer|All files (*.*)|*.*"
+    $cerDialog.CheckFileExists = $true
+    $cerDialog.ShowHelp = $false
+
+    if ($cerDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        $cerFile = Get-Item $cerDialog.FileName
+        Write-Host "Selected CER file: $($cerFile.FullName)" -ForegroundColor Green
+    } else {
+        Write-Host "No CER file selected (optional)" -ForegroundColor Gray
+    }
+}
+
+Write-Host ""
+
 # Step 1: Build and publish the project
 Write-Host 'Step 1: Building and publishing the project...' -ForegroundColor Yellow
 
 $projectPath = Join-Path $PSScriptRoot '..'
 $publishPath = Join-Path $projectPath 'publish'
-$signPath = Join-Path $PSScriptRoot 'sign'
 
 # Clean previous build
 Write-Host 'Cleaning previous build...'
@@ -52,27 +91,23 @@ Write-Host ''
 # Step 2: Sign published files
 Write-Host 'Step 2: Signing published files...' -ForegroundColor Yellow
 
-# Find PFX file in sign directory
-$pfxFile = Get-ChildItem -Path $signPath -Filter "*.pfx" -ErrorAction SilentlyContinue | Select-Object -First 1
+$signtoolPath = $null
+$plainPassword = $null
 
 if ($pfxFile) {
-    Write-Host "Found PFX file: $($pfxFile.FullName)" -ForegroundColor Green
-    
-    # Copy cer file to publish directory
-    $cerFile = Get-ChildItem -Path $signPath -Filter "*.cer" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($cerFile) {
-        Copy-Item -Path $cerFile.FullName -Destination (Join-Path $publishPath $cerFile.Name)
-        Write-Host "Copied CER file: $($cerFile.Name)" -ForegroundColor Green
-    }
-    
     # Get certificate password
     $pfxPassword = Read-Host "Enter PFX password (press Enter if no password)" -AsSecureString
     $plainPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($pfxPassword))
     
+    # Copy cer file to publish directory
+    if ($cerFile) {
+        Copy-Item -Path $cerFile.FullName -Destination (Join-Path $publishPath $cerFile.Name) -Force
+        Write-Host "Copied CER file: $($cerFile.Name)" -ForegroundColor Green
+    }
+    
     # Find signtool.exe - more comprehensive search
     Write-Host "Searching for signtool.exe..." -ForegroundColor Yellow
     
-    $signtoolPath = $null
     $signtoolPossiblePaths = @()
     
     # Add Windows 10/11 SDK paths
@@ -182,9 +217,7 @@ if ($pfxFile) {
         }
     }
 } else {
-    Write-Host "WARNING: No PFX file found in sign directory, skipping signing" -ForegroundColor Yellow
-    Write-Host "Sign directory: $signPath" -ForegroundColor Gray
-    Write-Host "Place your PFX and CER files in this directory to enable signing" -ForegroundColor Gray
+    Write-Host "WARNING: No PFX file selected, skipping signing" -ForegroundColor Yellow
 }
 
 Write-Host ''
