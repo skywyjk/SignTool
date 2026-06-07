@@ -7,6 +7,7 @@ using System.Text;
 using System.Linq;
 using System.Diagnostics;
 using System.Security.Principal;
+using System.IO;
 
 namespace SignTool
 {
@@ -720,105 +721,147 @@ namespace SignTool
                 return;
             }
 
-            using OpenFileDialog openDialog = new();
-            openDialog.Multiselect = true; // 允许多选
-            if (ChkDriverSigning.Checked)
+            DialogResult choiceResult = MessageBox.Show(
+                "请选择签名方式：\n\n" +
+                "是(Y) - 选择文件进行签名\n" +
+                "否(N) - 选择文件夹（将自动签名其中的所有可执行文件）",
+                "批量签名",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question);
+
+            if (choiceResult == DialogResult.Cancel)
+                return;
+
+            List<string> filesToSign = [];
+
+            if (choiceResult == DialogResult.Yes)
             {
-                openDialog.Filter = "驱动文件 (*.sys;*.cat)|*.sys;*.cat|所有文件 (*.*)|*.*";
-                openDialog.Title = "选择要批量签名的驱动文件（可多选）";
+                using OpenFileDialog openDialog = new();
+                openDialog.Multiselect = true;
+                if (ChkDriverSigning.Checked)
+                {
+                    openDialog.Filter = "驱动文件 (*.sys;*.cat)|*.sys;*.cat|所有文件 (*.*)|*.*";
+                    openDialog.Title = "选择要批量签名的驱动文件（可多选）";
+                }
+                else
+                {
+                    openDialog.Filter = "可执行文件 (*.exe;*.dll;*.msi)|*.exe;*.dll;*.msi|所有文件 (*.*)|*.*";
+                    openDialog.Title = "选择要批量签名的文件（可多选）";
+                }
+
+                if (openDialog.ShowDialog() == DialogResult.OK)
+                {
+                    filesToSign.AddRange(openDialog.FileNames);
+                }
             }
             else
             {
-                openDialog.Filter = "可执行文件 (*.exe;*.dll;*.msi)|*.exe;*.dll;*.msi|所有文件 (*.*)|*.*";
-                openDialog.Title = "选择要批量签名的文件（可多选）";
+                using FolderBrowserDialog folderDialog = new();
+                folderDialog.Description = "选择包含要签名文件的文件夹";
+                folderDialog.ShowNewFolderButton = true;
+
+                if (folderDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string selectedFolder = folderDialog.SelectedPath;
+                    string[] extensions;
+
+                    if (ChkDriverSigning.Checked)
+                    {
+                        extensions = [".sys", ".cat"];
+                    }
+                    else
+                    {
+                        extensions = [".exe", ".dll", ".msi"];
+                    }
+
+                    foreach (string ext in extensions)
+                    {
+                        string[] files = Directory.GetFiles(selectedFolder, $"*{ext}", SearchOption.AllDirectories);
+                        filesToSign.AddRange(files);
+                    }
+
+                    if (filesToSign.Count == 0)
+                    {
+                        MessageBox.Show($"在文件夹 \"{selectedFolder}\" 中未找到任何 {string.Join(", ", extensions)} 文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                }
             }
 
-            if (openDialog.ShowDialog() == DialogResult.OK)
+            if (filesToSign.Count == 0)
+                return;
+
+            string hashAlgorithm = CmbHashAlgorithm.SelectedItem?.ToString() ?? "SHA256";
+            string timestampServer = GetTimestampServerUrl();
+            bool useDualSign = ChkDualSign.Checked;
+
+            BtnBatchSign.Enabled = false;
+            BtnBatchSign.Text = $"签名中... 0/{filesToSign.Count}";
+
+            int successCount = 0;
+            int failCount = 0;
+            StringBuilder errorMessages = new();
+
+            for (int i = 0; i < filesToSign.Count; i++)
             {
-                string[] selectedFiles = openDialog.FileNames;
-                if (selectedFiles.Length == 0)
+                string filePath = filesToSign[i];
+                string fileName = System.IO.Path.GetFileName(filePath);
+
+                BtnBatchSign.Text = $"签名中... {i + 1}/{filesToSign.Count}";
+                BtnBatchSign.Refresh();
+
+                bool success;
+                if (useDualSign)
                 {
-                    return;
-                }
-
-                string hashAlgorithm = CmbHashAlgorithm.SelectedItem?.ToString() ?? "SHA256";
-                string timestampServer = GetTimestampServerUrl();
-                bool useDualSign = ChkDualSign.Checked;
-
-                // 禁用按钮并显示进度
-                BtnBatchSign.Enabled = false;
-                BtnBatchSign.Text = $"签名中... 0/{selectedFiles.Length}";
-
-                int successCount = 0;
-                int failCount = 0;
-                StringBuilder errorMessages = new();
-
-                // 逐个签名文件
-                for (int i = 0; i < selectedFiles.Length; i++)
-                {
-                    string filePath = selectedFiles[i];
-                    string fileName = System.IO.Path.GetFileName(filePath);
-
-                    // 更新进度
-                    BtnBatchSign.Text = $"签名中... {i + 1}/{selectedFiles.Length}";
-                    BtnBatchSign.Refresh();
-
-                    bool success;
-                    if (useDualSign)
+                    if (ChkDriverSigning.Checked)
                     {
-                        if (ChkDriverSigning.Checked)
-                        {
-                            success = CertificateManager.DualSignDriver(filePath, _currentCertificate, timestampServer);
-                        }
-                        else
-                        {
-                            success = CertificateManager.DualSignFile(filePath, _currentCertificate, false, "", timestampServer);
-                        }
+                        success = CertificateManager.DualSignDriver(filePath, _currentCertificate, timestampServer);
                     }
                     else
                     {
-                        if (ChkDriverSigning.Checked)
-                        {
-                            success = CertificateManager.SignDriver(filePath, _currentCertificate, hashAlgorithm, timestampServer);
-                        }
-                        else
-                        {
-                            success = CertificateManager.SignFile(filePath, _currentCertificate, hashAlgorithm, false, "", timestampServer);
-                        }
+                        success = CertificateManager.DualSignFile(filePath, _currentCertificate, false, "", timestampServer);
                     }
-
-                    if (success)
+                }
+                else
+                {
+                    if (ChkDriverSigning.Checked)
                     {
-                        successCount++;
+                        success = CertificateManager.SignDriver(filePath, _currentCertificate, hashAlgorithm, timestampServer);
                     }
                     else
                     {
-                        failCount++;
-                        errorMessages.AppendLine($"失败: {fileName}");
-                        if (!string.IsNullOrEmpty(CertificateManager.LastError))
-                        {
-                            errorMessages.AppendLine($"  原因: {CertificateManager.LastError}");
-                        }
+                        success = CertificateManager.SignFile(filePath, _currentCertificate, hashAlgorithm, false, "", timestampServer);
                     }
-
-                    // 让 UI 有机会更新
-                    await Task.Delay(10);
                 }
 
-                // 恢复按钮
-                BtnBatchSign.Enabled = true;
-                BtnBatchSign.Text = "批量签名";
-
-                // 显示结果
-                string resultMessage = $"批量签名完成！\n\n成功: {successCount} 个文件\n失败: {failCount} 个文件";
-                if (failCount > 0)
+                if (success)
                 {
-                    resultMessage += $"\n\n失败文件:\n{errorMessages}";
+                    successCount++;
+                }
+                else
+                {
+                    failCount++;
+                    errorMessages.AppendLine($"失败: {fileName}");
+                    if (!string.IsNullOrEmpty(CertificateManager.LastError))
+                    {
+                        errorMessages.AppendLine($"  原因: {CertificateManager.LastError}");
+                    }
                 }
 
-                MessageBox.Show(resultMessage, "批量签名结果", MessageBoxButtons.OK, 
-                    failCount > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+                await Task.Delay(10);
             }
+
+            BtnBatchSign.Enabled = true;
+            BtnBatchSign.Text = "批量签名";
+
+            string resultMessage = $"批量签名完成！\n\n成功: {successCount} 个文件\n失败: {failCount} 个文件";
+            if (failCount > 0)
+            {
+                resultMessage += $"\n\n失败文件:\n{errorMessages}";
+            }
+
+            MessageBox.Show(resultMessage, "批量签名结果", MessageBoxButtons.OK,
+                failCount > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
         }
 
         private void CmbCertificateStore_SelectedIndexChanged(object sender, EventArgs e)
